@@ -33,7 +33,7 @@ Clients are not started automatically. Use the next step.
 ### Option 2: Add Sample Clients (Services)
 
 ```bash
-docker-compose -f docker-compose-services.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose-services.yml up -d
 ```
 
 This starts:
@@ -48,7 +48,7 @@ All services are connected via `pg-messaging-network`. You can also run them ind
 Start only PostgreSQL in Docker:
 
 ```bash
-docker-compose up postgres -d
+docker-compose up -d postgres
 ```
 
 Then run a local client from source, e.g.:
@@ -114,6 +114,152 @@ python notify_listener.py
 ```
 
 Listens on a PostgreSQL notification channel and processes messages in real time.
+
+### Examples
+
+```
+➜  python publisher.py -f order_created.json
+Found 1 message file(s)
+
+Publishing order_created.json...
+Successfully published message:
+  Database ID: 9
+  Tracking ID: zkco8M9i
+  Created at: 2025-03-28 11:40:20.350708
+  Type: order_created
+  Namespace: commerce
+  Delivery stats:
+    - async: 3 recipients
+    - http: 1 recipients
+    - notify: 1 recipients
+
+Summary: Published 1 of 1 messages
+```
+
+**Async Receiver:**
+```
+➜  python async_consumer.py
+Starting async consumer for client: analytics-service
+Batch size: 10, Sleep interval: 15 seconds
+No new messages found. Going to sleep.
+Found 2 messages to process
+Processing message 8:
+  Type: order_created
+  Namespace: commerce
+  Created at: 2025-03-28 11:40:19.331189
+  Payload: {
+  "items": [
+    {
+      "price": 29.99,
+      "quantity": 2,
+      "product_id": "PROD-001"
+    },
+    {
+      "price": 49.95,
+      "quantity": 1,
+      "product_id": "PROD-005"
+    }
+  ],
+  "total": 109.93,
+  "sent_at": "2025-03-28T12:40:19.315700",
+  "order_id": "ORD-12345",
+  "customer_id": "CUST-789",
+  "tracking_id": "nublNa25"
+}
+Successfully processed message 8
+Processing message 9:
+  Type: order_created
+  Namespace: commerce
+  Created at: 2025-03-28 11:40:20.350708
+  Payload: {
+  "items": [
+    {
+      "price": 29.99,
+      "quantity": 2,
+      "product_id": "PROD-001"
+    },
+    {
+      "price": 49.95,
+      "quantity": 1,
+      "product_id": "PROD-005"
+    }
+  ],
+  "total": 109.93,
+  "sent_at": "2025-03-28T12:40:20.334465",
+  "order_id": "ORD-12345",
+  "customer_id": "CUST-789",
+  "tracking_id": "zkco8M9i"
+}
+Successfully processed message 9
+Marked 2 messages as delivered: [8, 9]
+```
+
+**Webhook Receiver:**
+```
+➜  python webhook_server.py
+HTTP webhook server starting on port 8080
+Ready to receive messages from PostgreSQL
+Available webhook endpoints:
+ - http://localhost:8080/webhook/notification-service
+ - http://localhost:8080/webhook/shipping-service
+ - http://localhost:8080/webhook/customer-service
+ * Serving Flask app 'webhook_server'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:8080
+ * Running on http://192.168.1.189:8080
+Press CTRL+C to quit
+Processing webhook for client: customer-service
+==================================================
+Received message 12
+Type: customer_registered
+Namespace: accounts
+Payload:
+{
+  "name": "New Customer",
+  "email": "new.customer@example.com",
+  "sent_at": "2025-03-28T12:51:01.539281",
+  "customer_id": "CUST-901",
+  "tracking_id": "1vOXJfM9"
+}
+==================================================
+Successfully processed message 12 for client customer-service
+127.0.0.1 - - [28/Mar/2025 12:51:02] "POST /webhook/customer-service HTTP/1.1" 200 -
+```
+
+**Notify Listener:**
+```
+➜  python notify_listener.py
+Starting NOTIFY listener for client: dashboard-service
+Listening on channel: dashboard_updates
+Listening for notifications on channel: dashboard_updates
+.............
+Received notification on channel: dashboard_updates
+Processing notification for message 13:
+  Type: order_created
+  Namespace: commerce
+  Payload: {
+  "items": [
+    {
+      "price": 29.99,
+      "quantity": 2,
+      "product_id": "PROD-001"
+    },
+    {
+      "price": 49.95,
+      "quantity": 1,
+      "product_id": "PROD-005"
+    }
+  ],
+  "total": 109.93,
+  "sent_at": "2025-03-28T13:03:43.563053",
+  "order_id": "ORD-12345",
+  "customer_id": "CUST-789",
+  "tracking_id": "RNoi6JBY"
+}
+Successfully processed notification for message 13
+```
 
 ---
 
