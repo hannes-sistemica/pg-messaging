@@ -33,7 +33,7 @@ Clients are not started automatically. Use the next step.
 ### Option 2: Add Sample Clients (Services)
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose-services.yml up -d
+docker-compose -f docker-compose-services.yml up -d
 ```
 
 This starts:
@@ -84,17 +84,34 @@ Omit `-f` to publish all messages in the folder. After publishing, you’ll see 
 
 ### Async (Polling)
 
+Showcases clients that process in batches or operate intermittently.
+
+- Fetches new messages from `message_delivery`.
+- Processes them, and marks them as `delivered` (via SQL Update).
+- Goes then to sleep for a defined while (configurable, default: 10 seconds)
+
+Below I am using uv.
 ```bash
 cd examples/async-client
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 python async_consumer.py
 ```
 
-Fetches new messages from `message_delivery`, processes them, and marks them as `delivered`.
-
 ### HTTP (Webhook Receiver)
 
+Postgres pushes via `http_post()` function to a defined webhook (see table 'subscriptions')
+
+- Requires reachable HTTP endpoints.
+- Retries can be configured via SQL functions.
+
+Below I am using uv.
 ```bash
 cd examples/http-client
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 python webhook_server.py
 ```
 
@@ -108,12 +125,21 @@ WHERE delivery_mode = 'http';
 
 ### Notify (pg_notify)
 
+Listens on a PostgreSQL notification channel and processes messages in real time.
+
+- Real-time `LISTEN/NOTIFY` messages.
+- No delivery tracking or retry.
+- Best for monitoring and dashboard UIs.
+
+Below I am using uv.
 ```bash
 cd examples/notify-client
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
 python notify_listener.py
 ```
 
-Listens on a PostgreSQL notification channel and processes messages in real time.
 
 ### Examples
 
