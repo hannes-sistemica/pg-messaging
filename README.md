@@ -109,6 +109,20 @@ This launches:
 
 Clients are not started automatically. Use the next step.
 
+### Option 1a: Use Pre-built Docker Image
+
+A pre-built Docker image with all extensions, schemas, and test data is available:
+
+```bash
+docker pull ghcr.io/hannes-sistemica/pg-messaging-postgres:latest
+
+# Run the container
+docker run -d \
+  --name postgres-messaging \
+  -p 5432:5432 \
+  -e POSTGRES_PASSWORD=postgres \
+  ghcr.io/hannes-sistemica/pg-messaging-postgres:latest
+
 ### Option 2: Add Sample Clients (Services)
 
 ```bash
