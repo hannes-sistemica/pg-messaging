@@ -22,7 +22,7 @@ This repository contains a messaging system built entirely on PostgreSQL. It off
 └── sql/                         # Database schema and triggers
 ```
 
----
+
 
 ## Overview
 
@@ -48,7 +48,7 @@ This system provides a complete event messaging solution with four main componen
 When a message is inserted into the `messages` table, PostgreSQL triggers automatically a distribution to all subscribed clients according to their preferred delivery mode. The system tracks all delivery attempts, allowing for comprehensive monitoring, retries of failed deliveries, and auditing of message flows.
 
 This multi-consumer approach allows each service to consume messages in the way that best fits its requirements for reliability, latency, and processing model, while maintaining a single, consistent message source.
----
+
 
 ## Environment Variables and Settings
 
@@ -144,7 +144,7 @@ python async_consumer.py
 
 Install PostgreSQL and manually run the SQL files in `sql/`. Ensure the `http` extension is available (see Dependency section). Then run publisher and clients from `examples/`.
 
----
+
 
 ## Publishing Messages
 
@@ -155,9 +155,18 @@ cd examples/publisher
 python publisher.py -f order_created.json
 ```
 
+If you run first time:
+```bash
+cd examples/publisher
+uv venv
+source .venv/bin/activate
+uv pip install -r requirements.txt
+python publisher.py -f order_created.json
+```
+
 Omit `-f` to publish all messages in the folder. After publishing, you’ll see delivery stats grouped by delivery mode.
 
----
+
 
 ## Consumer Types and Real-World Use Cases
 
@@ -432,7 +441,7 @@ Processing notification for message 13:
 Successfully processed notification for message 13
 ```
 
----
+
 
 ## Inspecting the System
 
@@ -448,7 +457,7 @@ Or connect to the container:
 docker exec -it postgres-messaging psql -U postgres -d messaging
 ```
 
----
+
 
 ## Screenshots
 
@@ -460,7 +469,7 @@ docker exec -it postgres-messaging psql -U postgres -d messaging
 
 ![Delivery](docs/screenshot_message-delivery_table.png)
 
----
+
 
 ## Monitoring and Observability
 
@@ -537,7 +546,7 @@ processing_latency = Histogram('pgmsg_processing_seconds', 'Message processing d
 
 Wrap processing logic and use labels per client.
 
----
+
 
 ## Dependency: pgsql-http Extension
 
@@ -571,7 +580,7 @@ CREATE EXTENSION IF NOT EXISTS http;
 - Calls block the transaction; prefer async queues for large-scale traffic
 - Add retries via `retry_failed_http_push()` SQL function
 
----
+
 
 ## Final Notes
 
@@ -621,7 +630,7 @@ Instrument end-to-end pipeline:
 - Custom queries on PostgreSQL metrics
 - Dashboards in Grafana showing delivery success, latency, and retries
 
----
+
 
 ## License
 
