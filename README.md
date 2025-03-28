@@ -1,19 +1,53 @@
+Here's a more detailed overview section:
+
 # PostgreSQL Event Messaging System
 
-This repository contains a messaging system built entirely on PostgreSQL. It offers reliable and trackable message distribution patterns: asynchronous consumption, HTTP-based webhooks, and real-time notifications using PostgreSQL’s `LISTEN/NOTIFY`. Unlike Kafka or RabbitMQ, this system requires no additional infrastructure and is ideal for integrating event-driven behavior into PostgreSQL-centric environments.
+This repository contains a messaging system built entirely on PostgreSQL. It offers reliable and trackable message distribution patterns: asynchronous consumption, HTTP-based webhooks, and real-time notifications using PostgreSQL's `LISTEN/NOTIFY`. Unlike Kafka or RabbitMQ, this system requires no additional infrastructure and is ideal for integrating event-driven behavior into PostgreSQL-centric environments.
+
+## Repository Structure
+
+```
+.
+├── README.md                    # This documentation
+├── docker/                      # Docker configuration files
+│   ├── pgadmin/                 # pgAdmin configuration
+│   └── postgres/                # PostgreSQL configuration & extensions
+├── docker-compose.yml           # Core services deployment
+├── docker-compose-services.yml  # Sample clients deployment
+├── examples/                    # Client implementations
+│   ├── async-client/            # Pull-based consumer
+│   ├── http-client/             # Webhook receiver
+│   ├── notify-client/           # NOTIFY listener
+│   └── publisher/               # Message publisher with samples
+└── sql/                         # Database schema and triggers
+```
 
 ---
 
 ## Overview
 
-When a message is inserted into the `messages` table, PostgreSQL triggers automatically distribute it to all subscribed clients. Each client can choose between three delivery modes:
+This system provides a complete event messaging solution with four main components:
 
-- **Async**: Clients poll messages when ready. This ensures durable delivery and decouples sender and receiver.
-- **HTTP Push**: PostgreSQL pushes the message directly to the client’s webhook URL. This enables real-time processing but requires the endpoint to be available.
-- **NOTIFY**: PostgreSQL sends a real-time event over a specified channel using `pg_notify()`. This is lightweight but does not persist delivery status.
+1. **PostgreSQL Database**: The central hub that stores messages and handles delivery routing via triggers. The database schema includes:
+   - `messages` table: Stores all published messages with type, namespace, and payload
+   - `subscriptions` table: Defines which clients receive which messages and how
+   - `message_delivery` table: Tracks delivery status for auditing and reliability
 
-All delivery attempts are tracked in a separate table, allowing inspection, retries, and audits.
+2. **pgAdmin**: A web-based administration tool that allows you to inspect messages, subscriptions, and delivery statuses through a user-friendly interface.
 
+3. **Message Publisher**: A Python client that publishes events to the system. It adds tracking IDs and timestamps to each message for traceability.
+
+4. **Three Types of Consumers**: The system demonstrates three distinct message consumption patterns, each with different trade-offs:
+
+   - **Async Consumer**: Pulls messages when ready to process them. Ideal for batch operations, heavy processing, or when 100% delivery guarantee is required. Example services: analytics-service, reporting-service.
+   
+   - **HTTP Webhook Consumer**: Receives messages via HTTP POST from PostgreSQL. Best for real-time processing needs when the service endpoint is reliable. Example services: notification-service, shipping-service.
+   
+   - **NOTIFY Listener**: Gets instant lightweight notifications via PostgreSQL's pub/sub channels. Perfect for dashboards, monitoring, or other real-time UI updates. Example services: dashboard-service, admin-portal.
+
+When a message is inserted into the `messages` table, PostgreSQL triggers automatically a distribution to all subscribed clients according to their preferred delivery mode. The system tracks all delivery attempts, allowing for comprehensive monitoring, retries of failed deliveries, and auditing of message flows.
+
+This multi-consumer approach allows each service to consume messages in the way that best fits its requirements for reliability, latency, and processing model, while maintaining a single, consistent message source.
 ---
 
 ## Environment Variables and Settings
