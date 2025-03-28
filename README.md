@@ -458,16 +458,53 @@ docker exec -it postgres-messaging psql -U postgres -d messaging
 ```
 
 
-
 ## Screenshots
 
 **Subscriptions table:**
 
-![Subscriptions](docs/screenshot_subscriptions_table.png)
+![Subscriptions table showing how clients are configured to receive messages](docs/screenshot_subscriptions_table.png)
+
+This screenshot shows the `subscriptions` table, which defines the routing rules for message delivery:
+
+- **id**: Unique identifier for each subscription
+- **client_id**: The service that will receive messages (e.g., analytics-service, dashboard-service)
+- **message_type**: The type of message this client wants to receive (e.g., order_created, user_login)
+- **namespace**: The business domain of the message (e.g., commerce, accounts, operations)
+- **delivery_mode**: How the client prefers to receive messages:
+  - `async`: Client will poll for messages
+  - `http`: Messages are pushed to client's webhook
+  - `notify`: Messages are sent via PostgreSQL's NOTIFY
+- **webhook_url**: The endpoint URL for clients using HTTP delivery mode
+- **notification_channel**: The PostgreSQL channel for NOTIFY delivery mode
+- **created_at**: When the subscription was created
+
+Note that wildcards (`*`) can be used for message_type and namespace to subscribe to all messages in a category.
 
 **Message delivery tracking:**
 
-![Delivery](docs/screenshot_message-delivery_table.png)
+![Message delivery tracking table showing the status of all message deliveries](docs/screenshot_message-delivery_table.png)
+
+This screenshot shows the `message_delivery` table, which tracks the delivery status of every message to each subscribed client:
+
+- **message_id**: References the original message in the `messages` table
+- **client_id**: The service receiving the message
+- **status**: Current delivery status:
+  - `new`: Waiting to be processed (for async mode)
+  - `push_attempted`: HTTP push initiated
+  - `push_succeeded`: HTTP push completed successfully
+  - `push_failed`: HTTP push failed
+  - `notified`: NOTIFY event was sent
+  - `delivered`: Client confirmed processing (for async mode)
+- **created_at**: When the delivery record was created
+- **delivered_at**: When the client confirmed processing (for async mode)
+- **push_attempted_at**: When an HTTP push was attempted
+- **push_status**: HTTP status code from webhook endpoint (for HTTP mode)
+- **retry_count**: Number of delivery retries for failed HTTP pushes
+- **error_details**: Error information for failed deliveries
+
+Each row represents a single message being delivered to a single client. The same message (identified by message_id) will have multiple delivery records if multiple clients are subscribed to that message type and namespace.
+
+This tracking system provides complete visibility into the message flow, enabling auditing, monitoring, and troubleshooting of all message deliveries across the system.
 
 
 
