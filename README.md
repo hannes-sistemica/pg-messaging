@@ -16,6 +16,51 @@ All delivery attempts are tracked in a separate table, allowing inspection, retr
 
 ---
 
+## Environment Variables and Settings
+
+### Core Services
+
+**PostgreSQL:**
+- `POSTGRES_USER`: Database username (default: `postgres`)
+- `POSTGRES_PASSWORD`: Database password (default: `postgres`) 
+- `POSTGRES_DB`: Database name (default: `messaging`)
+
+**pgAdmin:**
+- `PGADMIN_DEFAULT_EMAIL`: Admin login email (default: `admin@pgmessaging.com`)
+- `PGADMIN_DEFAULT_PASSWORD`: Admin password (default: `admin`)
+
+### Client Services
+
+**Async Consumer:**
+- `DB_HOST`: PostgreSQL host (default: `localhost`)
+- `DB_PORT`: PostgreSQL port (default: `5432`)
+- `DB_NAME`: Database name (default: `messaging`)
+- `DB_USER`: Database user (default: `postgres`)
+- `DB_PASS`: Database password (default: `postgres`)
+- `CLIENT_ID`: Unique client identifier (default: `analytics-service`)
+- `BATCH_SIZE`: Number of messages to process in one batch (default: `10`)
+- `SLEEP_INTERVAL`: Seconds to wait between batches (default: `15`)
+
+**Webhook Server:**
+- `PORT`: HTTP server port (default: `8080`)
+- `DEBUG`: Enable Flask debug mode (default: `false`)
+
+**Notify Listener:**
+- `DB_HOST`: PostgreSQL host (default: `localhost`)
+- `DB_PORT`: PostgreSQL port (default: `5432`)
+- `DB_NAME`: Database name (default: `messaging`)
+- `DB_USER`: Database user (default: `postgres`)
+- `DB_PASS`: Database password (default: `postgres`)
+- `CLIENT_ID`: Unique client identifier (default: `dashboard-service`)
+- `CHANNEL`: PostgreSQL notification channel (default: `dashboard_updates`)
+
+**Publisher:**
+- `DB_HOST`: PostgreSQL host (default: `localhost`)
+- `DB_PORT`: PostgreSQL port (default: `5432`)
+- `DB_NAME`: Database name (default: `messaging`)
+- `DB_USER`: Database user (default: `postgres`)
+- `DB_PASS`: Database password (default: `postgres`)
+
 ## Running the System
 
 ### Option 1: Run PostgreSQL and pgAdmin (Core Services)
@@ -79,6 +124,72 @@ python publisher.py -f order_created.json
 Omit `-f` to publish all messages in the folder. After publishing, you’ll see delivery stats grouped by delivery mode.
 
 ---
+
+## Consumer Types and Real-World Use Cases
+
+The system supports three types of consumers, each suited for different scenarios:
+
+### 1. Async Consumers (Pull-Based)
+
+**Implementation:** Clients poll the database for new messages at regular intervals, process them, and mark them as delivered.
+
+**Ideal for:**
+- **Batch Processing Systems**: Analytics platforms that process data in batches
+- **ETL Pipelines**: Data transfer processes that need reliable message delivery
+- **Reporting Services**: Systems that generate reports from event data
+- **Resource-Intensive Handlers**: Processes that require significant compute resources and need to control their own pace
+
+**Real-World Examples in this Repository:**
+- `analytics-service`: Processes order and product data to generate business insights
+- `reporting-service`: Creates reports based on system events, optimized for less frequent but larger batch sizes
+
+**Benefits:**
+- Maximum reliability (messages stay in queue until confirmed as processed)
+- Self-paced consumption (client controls when to fetch messages)
+- Automatic backpressure handling
+- No service availability requirements (client can be offline)
+
+### 2. HTTP Webhooks (Push-Based)
+
+**Implementation:** PostgreSQL pushes messages directly to client endpoints via HTTP POST requests.
+
+**Ideal for:**
+- **Real-Time Systems**: Services requiring immediate notification of events
+- **External Integrations**: Third-party services that expose webhook endpoints
+- **Microservices Communication**: Inter-service messaging within a microservices architecture
+- **Notification Systems**: Alert and notification services
+
+**Real-World Examples in this Repository:**
+- `notification-service`: Sends real-time notifications to users based on system events
+- `shipping-service`: Initiates shipping processes immediately when orders are paid
+- `customer-service`: Updates customer profiles based on registration and account activities
+
+**Benefits:**
+- Lower latency (real-time delivery)
+- No polling overhead
+- Simpler client implementation (just expose an HTTP endpoint)
+- Compatible with serverless architectures
+
+### 3. NOTIFY Listeners (Real-Time)
+
+**Implementation:** PostgreSQL sends lightweight notifications over channels that clients listen to continuously.
+
+**Ideal for:**
+- **UI Updates**: Dashboards and admin interfaces needing real-time updates
+- **Cache Invalidation**: Systems that need to know when to refresh cached data
+- **Real-Time Monitoring**: Alerting systems for operational events
+- **Low-Latency Applications**: Trading or bidding systems where milliseconds matter
+
+**Real-World Examples in this Repository:**
+- `dashboard-service`: Updates admin dashboards in real-time with new order information
+- `admin-portal`: Provides security teams with immediate notification of user login events
+- `monitoring-service`: Alerts operations teams to system issues as they happen
+
+**Benefits:**
+- Lowest latency (near real-time)
+- Lightweight (minimal overhead on database)
+- No persistence requirements (ephemeral)
+- Efficient for high-frequency events
 
 ## Receiving Messages
 
