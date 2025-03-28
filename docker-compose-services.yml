@@ -1,0 +1,108 @@
+services:
+  # Core infrastructure services from main docker-compose.yml
+  # postgres:
+  #   extends:
+  #     file: docker-compose.yml
+  #     service: postgres
+  # pgadmin:
+  #   extends:
+  #     file: docker-compose.yml
+  #     service: pgadmin
+
+  # HTTP Webhook Server
+  webhook-server:
+    build:
+      context: ./examples/http-client
+    container_name: webhook-server
+    environment:
+      PORT: 8080
+      DEBUG: "false"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - postgres
+    networks:
+      - pg-messaging-network
+    restart: unless-stopped
+
+  # Analytics Service (Async Consumer)
+  analytics-service:
+    build:
+      context: ./examples/async-client
+    container_name: analytics-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: messaging
+      DB_USER: postgres
+      DB_PASS: postgres
+      CLIENT_ID: analytics-service
+      BATCH_SIZE: 10
+      SLEEP_INTERVAL: 5
+    depends_on:
+      - postgres
+    networks:
+      - pg-messaging-network
+    restart: unless-stopped
+
+  # Reporting Service (Async Consumer)
+  reporting-service:
+    build:
+      context: ./examples/async-client
+    container_name: reporting-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: messaging
+      DB_USER: postgres
+      DB_PASS: postgres
+      CLIENT_ID: reporting-service
+      BATCH_SIZE: 5
+      SLEEP_INTERVAL: 10
+    depends_on:
+      - postgres
+    networks:
+      - pg-messaging-network
+    restart: unless-stopped
+
+  # Dashboard Service (NOTIFY Listener)
+  dashboard-service:
+    build:
+      context: ./examples/notify-client
+    container_name: dashboard-service
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: messaging
+      DB_USER: postgres
+      DB_PASS: postgres
+      CLIENT_ID: dashboard-service
+      CHANNEL: dashboard_updates
+    depends_on:
+      - postgres
+    networks:
+      - pg-messaging-network
+    restart: unless-stopped
+
+  # Admin Portal (NOTIFY Listener)
+  admin-portal:
+    build:
+      context: ./examples/notify-client
+    container_name: admin-portal
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: messaging
+      DB_USER: postgres
+      DB_PASS: postgres
+      CLIENT_ID: admin-portal
+      CHANNEL: security_events
+    depends_on:
+      - postgres
+    networks:
+      - pg-messaging-network
+    restart: unless-stopped
+
+networks:
+  pg-messaging-network:
+    external: true

@@ -1,0 +1,9 @@
+{
+    "type": "customer_registered",
+    "namespace": "accounts",
+    "payload": {
+      "customer_id": "CUST-901",
+      "email": "new.customer@example.com",
+      "name": "New Customer"
+    }
+  }

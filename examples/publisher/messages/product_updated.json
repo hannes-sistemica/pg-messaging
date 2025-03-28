@@ -1,0 +1,10 @@
+{
+    "type": "product_updated",
+    "namespace": "catalog",
+    "payload": {
+      "product_id": "PROD-001",
+      "name": "Premium Wireless Headphones",
+      "price": 34.99,
+      "stock_quantity": 45
+    }
+  }

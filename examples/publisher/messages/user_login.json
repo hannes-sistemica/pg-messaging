@@ -1,0 +1,9 @@
+{
+    "type": "user_login",
+    "namespace": "accounts",
+    "payload": {
+      "user_id": "USER-456",
+      "ip_address": "192.168.1.100",
+      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+  }

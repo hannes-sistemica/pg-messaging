@@ -1,0 +1,10 @@
+{
+    "type": "order_paid",
+    "namespace": "commerce",
+    "payload": {
+      "order_id": "ORD-12345",
+      "payment_id": "PAY-567890",
+      "amount": 109.93,
+      "payment_method": "credit_card"
+    }
+  }

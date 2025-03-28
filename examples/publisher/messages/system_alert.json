@@ -1,0 +1,15 @@
+{
+    "type": "system_alert",
+    "namespace": "operations",
+    "payload": {
+      "alert_id": "ALT-789",
+      "severity": "warning",
+      "component": "database-server",
+      "message": "High CPU usage detected",
+      "details": {
+        "cpu_usage": 85.2,
+        "memory_usage": 67.8,
+        "disk_space": 35.4
+      }
+    }
+  }
