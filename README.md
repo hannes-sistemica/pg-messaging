@@ -33,7 +33,7 @@ Clients are not started automatically. Use the next step.
 ### Option 2: Add Sample Clients (Services)
 
 ```bash
-docker-compose -f docker-compose.yml -f docker-compose-services.yml up -d
+docker-compose -f docker-compose-services.yml up -d
 ```
 
 This starts:
@@ -48,7 +48,7 @@ All services are connected via `pg-messaging-network`. You can also run them ind
 Start only PostgreSQL in Docker:
 
 ```bash
-docker-compose up -d postgres
+docker-compose up postgres -d
 ```
 
 Then run a local client from source, e.g.:
