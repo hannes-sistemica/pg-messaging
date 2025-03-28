@@ -7,12 +7,14 @@ on:
       - 'docker/postgres/**'
       - 'sql/**'
       - '.github/workflows/postgres-build.yml'
+      - '.github/workflows/Dockerfile.postgres-messaging'
   pull_request:
     branches: [ main, master ]
     paths:
       - 'docker/postgres/**'
       - 'sql/**'
       - '.github/workflows/postgres-build.yml'
+      - '.github/workflows/Dockerfile.postgres-messaging'
   workflow_dispatch:
     inputs:
       tag:
@@ -21,7 +23,7 @@ on:
         default: 'latest'
 
 env:
-  IMAGE_NAME: postgres-messaging
+  IMAGE_NAME: pg-messaging-postgres
   REGISTRY: ghcr.io
   IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
 

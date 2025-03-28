@@ -1,76 +1,45 @@
-name: Build and Publish Postgres Messaging Image
+FROM postgres:17
 
-on:
-  push:
-    branches: [ main, master ]
-    paths:
-      - 'docker/postgres/**'
-      - 'sql/**'
-      - '.github/workflows/postgres-build.yml'
-  pull_request:
-    branches: [ main, master ]
-    paths:
-      - 'docker/postgres/**'
-      - 'sql/**'
-      - '.github/workflows/postgres-build.yml'
-  workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Image tag (default: latest)'
-        required: false
-        default: 'latest'
+# Set arguments with defaults
+ARG POSTGRES_DB=messaging
+ARG POSTGRES_USER=postgres
+ARG POSTGRES_PASSWORD=postgres
 
-env:
-  IMAGE_NAME: pg-messaging-postgres
-  REGISTRY: ghcr.io
-  IMAGE_TAG: ${{ github.event.inputs.tag || 'latest' }}
+# Set environment variables
+ENV POSTGRES_DB=${POSTGRES_DB}
+ENV POSTGRES_USER=${POSTGRES_USER}
+ENV POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
 
-jobs:
-  build-and-push:
-    name: Build and Push Multi-Architecture Image
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+# Install required packages
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    git \
+    libcurl4-openssl-dev \
+    postgresql-server-dev-17 \
+    && rm -rf /var/lib/apt/lists/*
 
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+# Clone and install pgsql-http extension
+RUN git clone --branch master --single-branch --depth 1 https://github.com/pramsey/pgsql-http.git \
+    && cd pgsql-http \
+    && make \
+    && make install \
+    && cd .. \
+    && rm -rf pgsql-http
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: 'arm64,amd64'
+# Copy PostgreSQL configuration
+COPY docker/postgres/postgresql.conf /etc/postgresql/postgresql.conf
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+# Copy SQL initialization files in the correct order
+COPY sql/00-debug.sql /docker-entrypoint-initdb.d/00-debug.sql
+COPY sql/01-schema.sql /docker-entrypoint-initdb.d/01-schema.sql
+COPY sql/02-triggers.sql /docker-entrypoint-initdb.d/02-triggers.sql
+COPY sql/03-subscriptions.sql /docker-entrypoint-initdb.d/03-subscriptions.sql
+COPY sql/04-test-data.sql /docker-entrypoint-initdb.d/04-test-data.sql
 
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+# Add metadata labels
+LABEL org.opencontainers.image.source=https://github.com/hannes-sistemica/pg-messaging
+LABEL org.opencontainers.image.description="PostgreSQL Messaging System - A reliable event messaging system built on PostgreSQL"
+LABEL org.opencontainers.image.licenses=MIT
 
-      - name: Extract metadata for Docker
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=raw,value=${{ env.IMAGE_TAG }}
-            type=sha,prefix=
-            type=ref,event=branch
-            type=ref,event=pr
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          file: .github/workflows/Dockerfile.postgres-messaging
-          platforms: linux/amd64,linux/arm64
-          push: ${{ github.event_name != 'pull_request' }}
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+# Use the custom PostgreSQL configuration
+CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.conf"]
